@@ -163,6 +163,7 @@ function process_script {
         process_setup_centos8
       else
         process_setup_centos7
+      fi
     fi
 }
 
