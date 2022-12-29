@@ -16,6 +16,7 @@ TARGET_BUILD_COMMIT=""
 ENABLE_EP_CACHE=OFF
 
 LINUX_DISTRIBUTION=$(. /etc/os-release && echo ${ID})
+LINUX_VERSION=$(. /etc/os-release && echo ${VERSION_ID})
 
 for arg in "$@"
 do
@@ -104,6 +105,34 @@ function process_setup_centos8 {
       fi
 }
 
+function process_setup_centos7 {
+      git checkout scripts/setup-centos7.sh
+      sed -i '/^function dnf_install/i\DEPENDENCY_DIR=${DEPENDENCY_DIR:-$(pwd)}' scripts/setup-centos7.sh
+      sed -i '/^dnf_install autoconf/a\dnf_install libxml2-devel libgsasl-devel libuuid-devel binutils-devel' scripts/setup-centos7.sh
+      
+      # install gtest
+      sed -i '/^cmake_install_deps gflags/i function install_gtest {\n  wget https://github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz\n  tar -xzf release-1.12.1.tar.gz\n  cd googletest-release-1.12.1\n  mkdir build && cd build && cmake -DBUILD_GTEST=ON -DBUILD_GMOCK=ON -DINSTALL_GTEST=ON -DINSTALL_GMOCK=ON -DBUILD_SHARED_LIBS=ON ..\n  make "-j$(nproc)"\n  make install\n  cd ../../ && ldconfig\n}\n' scripts/setup-centos7.sh
+      sed -i '/^cmake_install_deps fmt/a \ \ install_gtest' scripts/setup-centos7.sh
+
+      # install hdfs
+      if [ $ENABLE_HDFS == "ON" ]; then
+        sed -i '/^cmake_install_deps gflags/i function install_libhdfs3 {\n  github_checkout apache/hawq master\n  cd depends/libhdfs3\n sed -i "/FIND_PACKAGE(GoogleTest REQUIRED)/d" ./CMakeLists.txt\n  sed -i "s/dumpversion/dumpfullversion/" ./CMake/Platform.cmake\n sed -i "s/dfs.domain.socket.path\\", \\"\\"/dfs.domain.socket.path\\", \\"\\/var\\/lib\\/hadoop-hdfs\\/dn_socket\\"/g" src/common/SessionConfig.cpp\n sed -i "s/pos < endOfCurBlock/pos \\< endOfCurBlock \\&\\& pos \\- cursor \\<\\= 128 \\* 1024/g" src/client/InputStreamImpl.cpp\n cmake_install\n}\n' scripts/setup-centos7.sh
+        sed -i '/^cmake_install_deps fmt/a \ \ install_libhdfs3' scripts/setup-centos7.sh
+      fi
+
+      # install protobuf&hdfs
+      if [[ $BUILD_PROTOBUF == "ON" ]] || [[ $ENABLE_HDFS == "ON" ]]; then
+        sed -i '/^cmake_install_deps gflags/i function install_protobuf {\n  wget https://github.com/protocolbuffers/protobuf/releases/download/v21.4/protobuf-all-21.4.tar.gz\n  tar -xzf protobuf-all-21.4.tar.gz\n  cd protobuf-21.4\n  ./configure  CXXFLAGS="-fPIC"  --prefix=/usr/local\n  make "-j$(nproc)"\n  make install\n  cd ../../ && ldconfig\n}\n' scripts/setup-centos7.sh
+        sed -i '/^cmake_install_deps fmt/a \ \ install_protobuf' scripts/setup-centos7.sh
+      fi
+
+      # install s3
+      if [ $ENABLE_S3 == "ON" ]; then
+        sed -i '/^cmake_install_deps gflags/i function install_awssdk {\n  github_checkout aws/aws-sdk-cpp 1.9.379 --depth 1 --recurse-submodules\n  cmake_install -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS:BOOL=OFF -DMINIMIZE_SIZE:BOOL=ON -DENABLE_TESTING:BOOL=OFF -DBUILD_ONLY:STRING="s3;identity-management" \n} \n' scripts/setup-centos7.sh
+        sed -i '/^cmake_install_deps fmt/a \ \ install_awssdk' scripts/setup-centos7.sh
+      fi
+}
+
 CURRENT_DIR=$(cd "$(dirname "$BASH_SOURCE")"; pwd)
 if [ "$VELOX_HOME" == "" ]; then
   VELOX_HOME="$CURRENT_DIR/../build/velox_ep"
@@ -130,7 +159,10 @@ function process_script {
     if [[ "$LINUX_DISTRIBUTION" == "ubuntu" ]]; then
       process_setup_ubuntu
     else # Assume CentOS
-      process_setup_centos8
+      if [[ "$LINUX_VERSION" == "8" ]]; then
+        process_setup_centos8
+      else
+        process_setup_centos7
     fi
 }
 
