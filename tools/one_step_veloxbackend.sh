@@ -74,30 +74,30 @@ do
 done
 
 ##install arrow
-cd $GLUTEN_DIR/ep/build-arrow/src
-if [ $BUILD_ARROW_FROM_SOURCE == "ON" ]; then
-  ./get_arrow.sh
-fi
-./build_arrow_for_velox.sh --build_type=$BUILD_TYPE --build_test=$BUILD_TESTS --build_benchmarks=$BUILD_BENCHMARKS \
-                           --enable_ep_cache=$ENABLE_EP_CACHE
+#cd $GLUTEN_DIR/ep/build-arrow/src
+#if [ $BUILD_ARROW_FROM_SOURCE == "ON" ]; then
+#  ./get_arrow.sh
+#fi
+#./build_arrow_for_velox.sh --build_type=$BUILD_TYPE --build_test=$BUILD_TESTS --build_benchmarks=$BUILD_BENCHMARKS \
+#                           --enable_ep_cache=$ENABLE_EP_CACHE
 
 ##install velox
-cd $GLUTEN_DIR/ep/build-velox/src
-if [ $BUILD_VELOX_FROM_SOURCE == "ON" ]; then
-  ./get_velox.sh
-fi
-./build_velox.sh --build_protobuf=$BUILD_PROTOBUF --enable_s3=$ENABLE_S3 \
-                 --build_type=$BUILD_TYPE --enable_hdfs=$ENABLE_HDFS  --build_type=$BUILD_TYPE \
-                 --enable_ep_cache=$ENABLE_EP_CACHE
+#cd $GLUTEN_DIR/ep/build-velox/src
+#if [ $BUILD_VELOX_FROM_SOURCE == "ON" ]; then
+#  ./get_velox.sh
+#fi
+#./build_velox.sh --build_protobuf=$BUILD_PROTOBUF --enable_s3=$ENABLE_S3 \
+#                 --build_type=$BUILD_TYPE --enable_hdfs=$ENABLE_HDFS  --build_type=$BUILD_TYPE \
+#                 --enable_ep_cache=$ENABLE_EP_CACHE
 
 ## compile gluten cpp
-cd $GLUTEN_DIR/cpp
-./compile.sh --build_velox_backend=ON --build_type=$BUILD_TYPE --build_velox_backend=ON \
-             --build_test=$BUILD_TESTS --build_benchmarks=$BUILD_BENCHMARKS --build_jemalloc=$BUILD_JEMALLOC \
-             --enable_hbm=$ENABLE_HBM --enable_s3=$ENABLE_S3 --enable_hdfs=$ENABLE_HDFS
+#cd $GLUTEN_DIR/cpp
+#./compile.sh --build_velox_backend=ON --build_type=$BUILD_TYPE --build_velox_backend=ON \
+#             --build_test=$BUILD_TESTS --build_benchmarks=$BUILD_BENCHMARKS --build_jemalloc=$BUILD_JEMALLOC \
+#             --enable_hbm=$ENABLE_HBM --enable_s3=$ENABLE_S3 --enable_hdfs=$ENABLE_HDFS --build_protobuf=$BUILD_PROTOBUF
 
 cd $GLUTEN_DIR
 mvn clean package -Pbackends-velox -Pspark-3.2 -DskipTests
-mvn clean package -Pbackends-velox -Pspark-3.3 -DskipTests
+#mvn clean package -Pbackends-velox -Pspark-3.3 -DskipTests
 
 

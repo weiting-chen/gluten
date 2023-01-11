@@ -10,8 +10,12 @@ BUILD_PROTOBUF=ON
 BUILD_TYPE=release
 VELOX_HOME=
 #for ep cache
-VELOX_REPO=https://github.com/oap-project/velox.git
-VELOX_BRANCH=main
+#VELOX_REPO=https://github.com/oap-project/velox.git
+#VELOX_BRANCH=main
+#VELOX_REPO=https://github.com/oap-project/velox.git
+VELOX_REPO=https://github.com/weiting-chen/velox.git
+#VELOX_BRANCH=main
+VELOX_BRANCH=wip_centos7_v2
 TARGET_BUILD_COMMIT=""
 ENABLE_EP_CACHE=OFF
 
@@ -171,7 +175,11 @@ function compile {
     if [[ "$LINUX_DISTRIBUTION" == "ubuntu" ]]; then
       scripts/setup-ubuntu.sh
     else # Assume CentOS
-      scripts/setup-centos8.sh
+      if [[ "$LINUX_VERSION" == "8" ]]; then
+        scripts/setup-centos8.sh
+      else
+        scripts/setup-centos7.sh
+      fi
     fi
     COMPILE_OPTION="-DVELOX_ENABLE_PARQUET=ON -DVELOX_BUILD_TESTING=OFF -DVELOX_ENABLE_DUCKDB=OFF -DVELOX_BUILD_TEST_UTILS=ON"
     if [ $ENABLE_HDFS == "ON" ]; then
@@ -183,6 +191,7 @@ function compile {
     COMPILE_OPTION="$COMPILE_OPTION -DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
     COMPILE_TYPE=$(if [[ "$BUILD_TYPE" == "debug" ]] || [[ "$BUILD_TYPE" == "Debug" ]]; then echo 'debug'; else echo 'release'; fi)
     echo "COMPILE_OPTION: "$COMPILE_OPTION
+    COMPILE_OPTION="$COMPILE_OPTION -DCMAKE_CXX_FLAGS="-Wno-error=register""
     make $COMPILE_TYPE EXTRA_CMAKE_FLAGS="${COMPILE_OPTION}"
     echo $TARGET_BUILD_COMMIT > "${BUILD_DIR}/velox-commit.cache"
 }
