@@ -163,6 +163,7 @@ class SingleDirectoryDataWriter(
     val ext = description.outputWriterFactory.getFileExtension(taskAttemptContext)
     val currentPath =
       committer.newTaskTempFile(taskAttemptContext, None, f"-c$fileCounter%03d" + ext)
+    
     currentWriter = description.outputWriterFactory.newInstance(
       path = currentPath,
       dataSchema = description.dataColumns.toStructType,
@@ -294,7 +295,7 @@ abstract class BaseDynamicPartitionDataWriter(
     // This must be in a form that matches our bucketing format. See BucketingUtils.
     val ext = f"$bucketIdStr.c$fileCounter%03d" +
       description.outputWriterFactory.getFileExtension(taskAttemptContext)
-    }
+
     val customPath = partDir.flatMap {
       dir => description.customPartitionLocations.get(PartitioningUtils.parsePathFragment(dir))
     }
