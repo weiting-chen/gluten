@@ -163,7 +163,7 @@ class SingleDirectoryDataWriter(
     val ext = description.outputWriterFactory.getFileExtension(taskAttemptContext)
     val currentPath =
       committer.newTaskTempFile(taskAttemptContext, None, f"-c$fileCounter%03d" + ext)
-    
+
     currentWriter = description.outputWriterFactory.newInstance(
       path = currentPath,
       dataSchema = description.dataColumns.toStructType,
