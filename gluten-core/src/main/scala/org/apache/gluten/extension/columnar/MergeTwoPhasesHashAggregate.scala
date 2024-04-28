@@ -83,7 +83,6 @@ case class MergeTwoPhasesHashBaseAggregate(session: SparkSession) extends Rule[S
             initialInputBufferOffset = 0,
             child = child.child
           )
-
         case objectHashAgg @ ObjectHashAggregateExec(
               _,
               isStreaming,
@@ -93,7 +92,8 @@ case class MergeTwoPhasesHashBaseAggregate(session: SparkSession) extends Rule[S
               aggregateAttributes,
               _,
               resultExpressions,
-              child: ObjectHashAggregateExec) if !isStreaming && isPartialAgg(child, objectHashAgg) =>
+              child: ObjectHashAggregateExec)
+            if !isStreaming && isPartialAgg(child, objectHashAgg) =>
           // convert to complete mode aggregate expressions
           val completeAggregateExpressions = aggregateExpressions.map(_.copy(mode = Complete))
           objectHashAgg.copy(
