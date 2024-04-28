@@ -306,7 +306,6 @@
                     <ignoreClass>org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand$</ignoreClass>
                     <!-- protobuf -->
                     <ignoreClass>com.google.protobuf.*</ignoreClass>
-                    <ignoreClass>org.apache.spark.sql.execution.stat.StatFunctions</ignoreClass>
                   </ignoreClasses>
                   <scopes>
                     <scope>compile</scope>

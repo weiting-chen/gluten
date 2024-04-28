@@ -38,7 +38,6 @@ import org.apache.spark.sql.execution.metric.{CustomMetrics, SQLMetric}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.util.{SerializableConfiguration, Utils}
-import org.apache.spark.util.Utils.isDirectWriteScheme
 
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapreduce.TaskAttemptContext
@@ -162,12 +161,8 @@ class SingleDirectoryDataWriter(
     releaseResources()
 
     val ext = description.outputWriterFactory.getFileExtension(taskAttemptContext)
-    val fileCounterExt = if (description.maxRecordsPerFile > 0) {
-      f"-c$fileCounter%03d"
-    } else {
-      ""
-    }
-    val currentPath = committer.newTaskTempFile(taskAttemptContext, None, fileCounterExt + ext)
+    val currentPath =
+      committer.newTaskTempFile(taskAttemptContext, None, f"-c$fileCounter%03d" + ext)
     currentWriter = description.outputWriterFactory.newInstance(
       path = currentPath,
       dataSchema = description.dataColumns.toStructType,
@@ -297,21 +292,14 @@ abstract class BaseDynamicPartitionDataWriter(
     val bucketIdStr = bucketId.map(BucketingUtils.bucketIdToString).getOrElse("")
 
     // This must be in a form that matches our bucketing format. See BucketingUtils.
-    val ext = if (!bucketIdStr.isEmpty || description.maxRecordsPerFile > 0) {
-      f"$bucketIdStr.c$fileCounter%03d" +
-        description.outputWriterFactory.getFileExtension(taskAttemptContext)
-    } else {
+    val ext = f"$bucketIdStr.c$fileCounter%03d" +
       description.outputWriterFactory.getFileExtension(taskAttemptContext)
     }
     val customPath = partDir.flatMap {
       dir => description.customPartitionLocations.get(PartitioningUtils.parsePathFragment(dir))
     }
     val currentPath = if (customPath.isDefined) {
-      if (isDirectWriteScheme(taskAttemptContext.getConfiguration, customPath.get)) {
-        committer.newTaskTempFile(taskAttemptContext, None, ext)
-      } else {
-        committer.newTaskTempFileAbsPath(taskAttemptContext, customPath.get, ext)
-      }
+      committer.newTaskTempFileAbsPath(taskAttemptContext, customPath.get, ext)
     } else {
       committer.newTaskTempFile(taskAttemptContext, partDir, ext)
     }

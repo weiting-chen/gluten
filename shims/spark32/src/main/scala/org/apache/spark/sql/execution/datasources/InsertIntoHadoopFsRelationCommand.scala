@@ -29,7 +29,6 @@ import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.internal.SQLConf.PartitionOverwriteMode
 import org.apache.spark.sql.util.SchemaUtils
-import org.apache.spark.util.Utils.isDirectWriteScheme
 
 import org.apache.hadoop.fs.{FileSystem, Path}
 
@@ -107,71 +106,11 @@ case class InsertIntoHadoopFsRelationCommand(
 
     val jobId = java.util.UUID.randomUUID().toString
 
-    val isDirectWrite = isDirectWriteScheme(hadoopConf, outputPath.toString)
-    val isStaticPartitionInsert =
-      staticPartitions.size == partitionColumns.length && partitionColumns.nonEmpty
-
-    val formattedOutputPath = if (isStaticPartitionInsert) {
-      // This will not work correctly for cases where spark.sql.storeAssignmentPolicy=LEGACY
-      // and we insert into a partition where the types don't match i.e
-      // create table t(a int, b string) using parquet partitioned by (a);
-      // insert into t partition(a='ansi') values('ansi');
-      // The correct behavior is to insert data under a=__HIVE_DEFAULT_PARTITION__
-      // since ansi cannot be an integer but this will insert data under a=ansi
-      // so we extract the value of the partition by analyzing the query.
-      val formattedStaticPartitions = staticPartitions.map {
-        case (k, v) =>
-          val index = outputColumnNames.indexOf(k)
-          val isNull = query match {
-            case Project(projectList, _) =>
-              projectList(index).asInstanceOf[Alias].child.asInstanceOf[Literal].value == null
-            case LocalRelation(_, Nil, _) => false
-            case LocalRelation(_, data, _) =>
-              data.head.isNullAt(index)
-            case _ => false
-          }
-          if (isNull) {
-            k -> null
-          } else {
-            k -> v
-          }
-      }
-      val defaultLocation = outputPath +
-        "/" + PartitioningUtils.getPathFragment(formattedStaticPartitions, partitionColumns)
-      new Path(customPartitionLocations.getOrElse(staticPartitions, defaultLocation))
-    } else {
-      outputPath
-    }
-
-    hadoopConf.setBoolean("pinterest.spark.sql.staticPartitionInsert", isStaticPartitionInsert)
-    // DataSourceStrategy.scala relies on the s3 committer being set here when checking
-    // if the writePath == readPath
-    if (isDirectWrite) {
-      if ((isStaticPartitionInsert || partitionColumns.isEmpty) && bucketSpec.isEmpty) {
-        hadoopConf.set(
-          "spark.sql.sources.outputCommitterClass",
-          "com.netflix.bdp.s3.S3DirectoryOutputCommitter")
-        hadoopConf.set(
-          "spark.sql.parquet.output.committer.class",
-          "com.netflix.bdp.s3.S3DirectoryOutputCommitter")
-      } else {
-        hadoopConf.set(
-          "spark.sql.sources.outputCommitterClass",
-          "com.netflix.bdp.s3.S3PartitionedOutputCommitter")
-        hadoopConf.set(
-          "spark.sql.parquet.output.committer.class",
-          "com.netflix.bdp.s3.S3PartitionedOutputCommitter")
-      }
-      hadoopConf.set(
-        "s3.multipart.committer.conflict-mode",
-        if (mode == SaveMode.Overwrite) "replace" else "append")
-    }
-
     val committer = FileCommitProtocol.instantiate(
       sparkSession.sessionState.conf.fileCommitProtocolClass,
       jobId = jobId,
-      outputPath = formattedOutputPath.toString,
-      dynamicPartitionOverwrite = !isDirectWrite && dynamicPartitionOverwrite
+      outputPath = outputPath.toString,
+      dynamicPartitionOverwrite = dynamicPartitionOverwrite)
     )
 
     val doInsertion = if (mode == SaveMode.Append) {
@@ -188,9 +127,7 @@ case class InsertIntoHadoopFsRelationCommand(
             // For dynamic partition overwrite, do not delete partition directories ahead.
             true
           } else {
-            if (!isDirectWrite) {
-              deleteMatchingPartitions(fs, qualifiedOutputPath, customPartitionLocations, committer)
-            }
+            deleteMatchingPartitions(fs, qualifiedOutputPath, customPartitionLocations, committer)
             true
           }
         case (SaveMode.Overwrite, _) | (SaveMode.ErrorIfExists, false) =>

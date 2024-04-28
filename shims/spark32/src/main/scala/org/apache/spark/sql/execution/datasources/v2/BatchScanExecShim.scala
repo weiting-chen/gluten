@@ -62,9 +62,20 @@ abstract class BatchScanExecShim(
 
       // call toBatch again to get filtered partitions
       val newPartitions = scan.toBatch.planInputPartitions()
+
+      originalPartitioning match {
+        case p: DataSourcePartitioning if p.numPartitions != newPartitions.size =>
+          throw new SparkException(
+            "Data source must have preserved the original partitioning during runtime filtering; " +
+              s"reported num partitions: ${p.numPartitions}, " +
+              s"num partitions after runtime filtering: ${newPartitions.size}")
+        case _ =>
+        // no validation is needed as the data source did not report any specific partitioning
+      }
+
       newPartitions.map(Seq(_))
     } else {
-      partitions
+      partitions.map(Seq(_))
     }
   }
 
