@@ -294,6 +294,26 @@
                     <ignoreClass>org.apache.commons.logging.*</ignoreClass>
                     <!-- hive -->
                     <ignoreClass>org.apache.hadoop.hive.*</ignoreClass>
+                    <!-- nio -->
+                    <ignoreClass>org.apache.spark.OneToOneDependency</ignoreClass>
+                    <ignoreClass>org.apache.spark.Dependency</ignoreClass>
+                    <ignoreClass>org.apache.spark.NarrowDependency</ignoreClass>
+                    <ignoreClass>org.apache.spark.ShuffleDependency</ignoreClass>
+                    <ignoreClass>org.apache.spark.ShuffleDependency$</ignoreClass>
+                    <ignoreClass>org.apache.spark.RangeDependency</ignoreClass>
+                    <ignoreClass>org.apache.spark.sql.execution.exchange.ShuffleExchangeExec*</ignoreClass>
+                    <ignoreClass>org.apache.spark.sql.execution.exchange.ShuffleExchangeExec$</ignoreClass>
+                    <ignoreClass>org.apache.spark.sql.execution.exchange.ShuffleExchangeExec$$anon$1</ignoreClass>
+                    <ignoreClass>org.apache.spark.sql.execution.exchange.ShuffleExchangeExec$$anon$2</ignoreClass>
+                    <ignoreClass>org.apache.spark.sql.execution.exchange.ShuffleExchangeExec$$anon$3</ignoreClass>
+                    <ignoreClass>org.apache.spark.sql.execution.exchange.ShuffleExchangeExec$$anon$4</ignoreClass>
+                    <ignoreClass>org.apache.spark.sql.execution.exchange.ShuffleExchangeExec$$anon$5</ignoreClass>
+                    <ignoreClass>org.apache.spark.sql.execution.exchange.ShuffleExchangeLike</ignoreClass>
+                    <ignoreClass>org.apache.spark.sql.execution.exchange.REBALANCE_PARTITIONS_BY_NONE$</ignoreClass>
+                    <ignoreClass>org.apache.spark.sql.execution.exchange.REPARTITION_BY_NUM$</ignoreClass>
+                    <ignoreClass>org.apache.spark.sql.execution.exchange.REBALANCE_PARTITIONS_BY_COL$</ignoreClass>
+                    <ignoreClass>org.apache.spark.sql.execution.exchange.REPARTITION_BY_COL$</ignoreClass>
+                    <ignoreClass>org.apache.spark.sql.execution.exchange.ENSURE_REQUIREMENTS$</ignoreClass>
                     <!-- celeborn -->
                     <ignoreClass>org.apache.spark.sql.execution.columnar.ByteBufferHelper</ignoreClass>
                     <ignoreClass>org.apache.spark.sql.execution.columnar.ByteBufferHelper$</ignoreClass>
